@@ -1,0 +1,5 @@
+# Bicep template parameters. These can contain secrets and other sensitive material.
+/*.parameters.json
+
+# Backups from local deployments.
+/backups
