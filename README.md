@@ -15,6 +15,14 @@ docker push <registry>.azurecr.io/discourse:latest
 ```
 
 ## Local testing commands
+### Build and deploy a local instance
+```
+python ./build.py build app.local.yaml
+python ./build.py start app.local.yaml
+```
+
+Discourse will be available at http://localhost
+
 ### Create an admin account
 ```
 python ./build.py enter app.local.yaml
