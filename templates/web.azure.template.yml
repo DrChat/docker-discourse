@@ -65,8 +65,8 @@ build:
         - |-
           sudo -H -E -u discourse bash -c '
             git remote add fuck https://github.com/DrChat/discourse.git
-            git fetch fuck renice
-            git checkout fuck/renice
+            git fetch fuck patches
+            git checkout fuck/patches
           '
   - exec:
       cd: $home
