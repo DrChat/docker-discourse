@@ -174,6 +174,10 @@ def main():
             if "volumes" in yml:
                 for volume in yml.get("volumes", []):
                     volume = volume["volume"]
+                    if volume['host'].startswith("./"):
+                        # Relative path. Canonicalize it before passing it to Docker.
+                        volume['host'] = os.path.abspath(volume['host'])
+
                     dkrargs.extend(["-v", f"{volume['host']}:{volume['guest']}"])
 
             # TODO: links

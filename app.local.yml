@@ -94,6 +94,9 @@ volumes:
   - volume:
       host: discourse_shared-standalone
       guest: /shared
+  - volume:
+      host: ./backups
+      guest: /shared/backups
   # - volume:
   #     host: discourse_shared-standalone-log
   #     guest: /var/log
