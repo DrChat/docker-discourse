@@ -36,6 +36,8 @@ python ./build.py start app.local.yaml
 Discourse will be available at http://localhost
 
 ### Create an admin account
+This allows you to run Discourse **without** a mailserver.
+
 ```
 python ./build.py enter app.local.yaml
 cd /var/www/discourse
