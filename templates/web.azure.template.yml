@@ -192,7 +192,8 @@ run:
   - exec:
       cmd:
         - "cp $home/config/nginx.sample.conf /etc/nginx/conf.d/discourse.conf"
-        - "rm /etc/nginx/sites-enabled/default"
+        - "rm -f /etc/nginx/nginx.conf"
+        - "rm -f /etc/nginx/sites-enabled/default"
         - "mkdir -p /var/nginx/cache"
 
         # Stop building the container if the Nginx outlets are missing
@@ -212,24 +213,74 @@ run:
         - "touch /etc/nginx/conf.d/outlets/discourse/20-https.conf"
         - "touch /etc/nginx/conf.d/outlets/discourse/30-ratelimited.conf"
 
-  - replace:
-      filename: /etc/nginx/nginx.conf
-      from: pid /run/nginx.pid;
-      to: daemon off;
+  - file:
+      path: /etc/nginx/nginx.conf
+      contents: |
+        user www-data;
+        worker_processes auto;
+        daemon off;
+        error_log /var/log/nginx/error.log;
+        include /etc/nginx/modules-enabled/*.conf;
 
-  - replace:
-      filename: "/etc/nginx/nginx.conf"
-      from: /worker_connections.+$/
-      to: worker_connections $nginx_worker_connections;
+        events {
+          worker_connections $nginx_worker_connections;
+          # multi_accept on;
+        }
 
-  # https://learn.microsoft.com/en-us/answers/questions/1155680/all-requests-to-my-app-service-(linux)-appear-to-i
-  # Insert a line under the `http` block to forward the client IP properly.
-  - exec:
-      cmd:
-        - |
-          sed -i '/^http {/a\
-          \    set_real_ip_from 169.254.0.0/16;\
-          \    real_ip_header X-Forwarded-For;' /etc/nginx/nginx.conf
+        http {
+          # https://learn.microsoft.com/en-us/answers/questions/1155680/all-requests-to-my-app-service-(linux)-appear-to-i
+          # Insert a line under the `http` block to forward the client IP properly.
+          set_real_ip_from 169.254.0.0/16;
+          real_ip_header X-Forwarded-For;
+
+          ##
+          # Basic Settings
+          ##
+
+          sendfile on;
+          tcp_nopush on;
+          types_hash_max_size 2048;
+          # server_tokens off;
+
+          # server_names_hash_bucket_size 64;
+          # server_name_in_redirect off;
+
+          include /etc/nginx/mime.types;
+          default_type application/octet-stream;
+
+          ##
+          # SSL Settings
+          ##
+
+          ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3; # Dropping SSLv3, ref: POODLE
+          ssl_prefer_server_ciphers on;
+
+          ##
+          # Logging Settings
+          ##
+
+          # access_log /var/log/nginx/access.log;
+
+          ##
+          # Gzip Settings
+          ##
+
+          gzip on;
+
+          # gzip_vary on;
+          # gzip_proxied any;
+          # gzip_comp_level 6;
+          # gzip_buffers 16 8k;
+          # gzip_http_version 1.1;
+          # gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+
+          ##
+          # Virtual Host Configs
+          ##
+
+          include /etc/nginx/conf.d/*.conf;
+          include /etc/nginx/sites-enabled/*;
+        }
 
   - replace:
       filename: "/etc/nginx/conf.d/discourse.conf"
