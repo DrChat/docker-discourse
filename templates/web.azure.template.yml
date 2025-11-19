@@ -14,7 +14,7 @@ env:
   # DISCOURSE_DB_PORT:
 
 params:
-  version: tests-passed
+  version: latest
   home: /var/www/discourse
   upload_size: 10m
   nginx_worker_connections: 4000
@@ -66,7 +66,8 @@ build:
           sudo -H -E -u discourse bash -c '
             git remote add fuck https://github.com/DrChat/discourse.git
             git fetch fuck patches
-            git checkout fuck/patches
+            git fetch fuck oidc
+            git checkout fuck/oidc
           '
   - exec:
       cd: $home
@@ -114,6 +115,12 @@ build:
       cmd:
         - su discourse -c 'bundle exec rake assets:precompile:build'
 
+  # Download and install acsproxy
+  - exec:
+      cmd:
+        - curl -L https://github.com/DrChat/acsproxy/releases/download/v0.0.1/acsproxy-x86_64-unknown-linux-musl.tar.gz | tar -zx -C /usr/local/bin
+        - chmod +x /usr/local/bin/acsproxy
+
 run:
   - file:
      path: /etc/cron.d/anacron
@@ -133,6 +140,21 @@ run:
         # find DISCOURSE_ env vars, strip the leader, lowercase the key
         /usr/local/bin/ruby -e 'ENV.each{|k,v| puts "#{$1.downcase} = '\''#{v}'\''" if k =~ /^DISCOURSE_(.*)/}' > $conf
 
+  # Create acsproxy runit service
+  - file:
+      path: /etc/service/acsproxy/run
+      chmod: "+x"
+      contents: |
+        #!/bin/bash
+        exec 2>&1
+        
+        # Set ACSPROXY_ENDPOINT from DISCOURSE_SMTP_ACS_ENDPOINT environment variable
+        if [ -n "$DISCOURSE_SMTP_ACS_ENDPOINT" ]; then
+          export ACSPROXY_ENDPOINT="$DISCOURSE_SMTP_ACS_ENDPOINT"
+        fi
+        
+        exec /usr/local/bin/acsproxy
+
   - file:
      path: /etc/service/unicorn/run
      chmod: "+x"
@@ -147,9 +169,12 @@ run:
         if [[ -z "$PRECOMPILE_ON_BOOT" ]]; then
           PRECOMPILE_ON_BOOT=1
         fi
-        if [ -f /usr/local/bin/create_db ] && [ "$CREATE_DB_ON_BOOT" = "1" ]; then /usr/local/bin/create_db; fi;
-        if [ "$MIGRATE_ON_BOOT" = "1" ]; then su discourse -c 'bundle exec rake db:migrate'; fi
-        if [ "$PRECOMPILE_ON_BOOT" = "1" ]; then SKIP_EMBER_CLI_COMPILE=1 su discourse -c 'bundle exec rake assets:precompile'; fi
+        if [ "$MIGRATE_ON_BOOT" = "1" ]; then
+          su discourse -c 'bundle exec rake db:migrate' || exit 1
+        fi
+        if [ "$PRECOMPILE_ON_BOOT" = "1" ]; then
+          SKIP_EMBER_CLI_COMPILE=1 su discourse -c 'bundle exec rake assets:precompile' || exit 1
+        fi
         LD_PRELOAD=$RUBY_ALLOCATOR HOME=/home/discourse USER=discourse exec thpoff chpst -u discourse:www-data -U discourse:www-data bundle exec config/unicorn_launcher -E production -c config/unicorn.conf.rb
 
   - file:

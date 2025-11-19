@@ -7,6 +7,8 @@
 ## YAML FILES ARE SUPER SUPER SENSITIVE TO MISTAKES IN WHITESPACE OR ALIGNMENT!
 ## visit http://www.yamllint.com/ to validate this file as needed
 
+base_image: discourse/base:2.0.20251003-1437
+
 templates:
   - "templates/offline-page.template.yml"
   - "templates/postgres.template.yml"
@@ -21,7 +23,7 @@ templates:
 ## If you want Discourse to share a port with another webserver like Apache or nginx,
 ## see https://meta.discourse.org/t/17247 for details
 expose:
-  - "80:8000"   # http
+  - "4200:8000"   # http
 
 params:
   db_default_text_search_config: "pg_catalog.english"
@@ -48,7 +50,7 @@ env:
 
   ## TODO: The domain name this Discourse instance will respond to
   ## Required. Discourse will not work with a bare IP number.
-  DISCOURSE_HOSTNAME: localhost
+  DISCOURSE_HOSTNAME: localhost:4200
 
   # Database host settings.
   DISCOURSE_DB_SOCKET: /var/run/postgresql
@@ -66,12 +68,14 @@ env:
   ## TODO: The SMTP mail server used to validate new accounts and send notifications
   # SMTP ADDRESS is required
   # WARNING: SMTP password should be wrapped in quotes to avoid problems
-  DISCOURSE_SMTP_AUTHENTICATION: 
-  DISCOURSE_SMTP_ADDRESS: 
-  DISCOURSE_SMTP_PORT: 587
-  DISCOURSE_SMTP_USER_NAME: user@example.com
-  DISCOURSE_SMTP_PASSWORD: ""
-  #DISCOURSE_SMTP_ENABLE_START_TLS: true           # (optional, default: true)
+  DISCOURSE_SMTP_ACS_ENDPOINT: https://appserver-comms-4jgegnuvljkxk.unitedstates.communication.azure.com
+  DISCOURSE_SMTP_AUTHENTICATION: none
+  DISCOURSE_SMTP_ADDRESS: localhost
+  DISCOURSE_SMTP_PORT: 5000
+  DISCOURSE_SMTP_ENABLE_START_TLS: false           # (optional, default: true)
+  DISCOURSE_SMTP_OPENSSL_VERIFY_MODE: none
+  #DISCOURSE_SMTP_USER_NAME: user@example.com
+  #DISCOURSE_SMTP_PASSWORD: ""
   #DISCOURSE_SMTP_DOMAIN: localhost                # (required by some providers)
   #DISCOURSE_NOTIFICATION_EMAIL: noreply@localhost
   #DISCOURSE_SMTP_OPENSSL_VERIFY_MODE: peer        # (optional, default: peer, valid values: none, peer, client_once, fail_if_no_peer_cert)

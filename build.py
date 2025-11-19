@@ -10,7 +10,7 @@ import argparse
 import re
 
 # The published base image.
-BASE_IMAGE = "discourse/base:2.0.20250715-0020"
+BASE_IMAGE = "discourse/base:2.0.20251003-1437"
 
 # The path to the locally-built Dockerfile
 DKR_PATH = "dkr"
